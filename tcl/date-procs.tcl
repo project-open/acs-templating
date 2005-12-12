@@ -310,7 +310,7 @@ ad_proc -public template::util::date::get_property { what date } {
 	}
         set pad "00"
       }
-      return "to_date('$value', '$format')"
+      return "to_timestamp('$value', '$format')"
     }
     ansi {
       # LARS: Empty date results in NULL value
