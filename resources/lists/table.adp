@@ -139,7 +139,7 @@
 
             <group column="subrownum">
               <td class="@elements.class@"@elements.cell_attributes;noquote@>
-                <listelement name="@elements.name@">
+                <listelement name="@elements.name;noquote@">
               </td>
             </group>
           </tr>
