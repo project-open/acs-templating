@@ -1036,6 +1036,11 @@ ad_proc -public template::widget::date { element_reference tag_attributes } {
     set value {}
   }
 
+  # Deal with standard ]project-open[ date format "YYYY-MM-DD"
+  if {[regexp {^(....)\-(..)\-(..)$} $value match year month day]} {
+      set value "$year [template::util::leadingTrim $month] [template::util::leadingTrim $day]"
+  }
+
   # Keep taking tokens off the top of the string until out
   # of tokens
   set format_string $element(format)
