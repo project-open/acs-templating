@@ -595,7 +595,11 @@ ad_proc -public template::util::clear_cookie { name { domain "" } } {
   ns_set put [ns_conn outputheaders] "Set-Cookie" $cookie
 } 
 
-ad_proc -public template::util::quote_html { html } {
+ad_proc -public template::util::quote_html {
+  html
+} {
+  Quote possible HTML tags in the contents of the html parameter.  
+} {
 
   regsub -all \" [ns_quotehtml $html] \\&quot\; html
 
@@ -621,8 +625,10 @@ ad_proc -public template::util::multirow_quote_html {multirow_ref column_ref} {
 }
 
 
-ad_proc -public template::util::multirow_foreach { name code_text } {
-    runs a block of code foreach row in a multirow 
+ad_proc -deprecated -public template::util::multirow_foreach { name code_text } {
+    runs a block of code foreach row in a multirow.
+
+    Using "template::multirow foreach" is recommended over this routine.
 
     @param name the name of the multirow over which the block of 
                 code is iterated
@@ -633,13 +639,14 @@ ad_proc -public template::util::multirow_foreach { name code_text } {
                      "fake_multirow" containing columns named "spanky" 
                      and "foobar",to set the column spanky to the value 
                      of column foobar use:<br> 
-                     <code>set fake_multirow.spanky 
-                           @fake_multirow.foobar@</code>
+                     <code>set fake_multirow.spanky @fake_multirow.foobar@</code>
                      <p>
                      note: this block of code is evaluated in the same 
                      scope as the .tcl page that uses this procedure
 
     @author simon
+
+    @see template::multirow
 } {
 
   upvar $name:rowcount rowcount $name:columns columns i i
@@ -729,21 +736,21 @@ ad_proc -public template::util::number_list { last_number {start_at 0} } {
 }
 
 ad_proc -public template::util::tcl_to_sql_list { lst } {
-    Convert a TCL list to a SQL list, for use with the "in" statement
-    why doesn't this use ns_dbquotevalue?
+    Convert a TCL list to a SQL list, for use with the "in" statement.
+    Uses DoubleApos (similar to ns_dbquotevalue) functionality to escape single quotes
 } {
 
-  if { [llength $lst] > 0 } {
-    set sql "'"
-    append sql [join $lst "', '"]
-    append sql "'"
-    return $sql
-  } else {
-    return ""
-  }
+    if { [llength $lst] > 0 } {
+        # adding DoubleApos functionality for security reasons.
+        regsub -all -- ' "$lst" '' lst2
+        set sql "'"
+        append sql [join $lst2 "', '"]
+        append sql "'"
+        return $sql
+    } else {
+        return ""
+    }
 }
-
-
 
 ad_proc -public template::get_resource_path {} {
     Get the template directory

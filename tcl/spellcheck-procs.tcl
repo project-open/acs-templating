@@ -49,6 +49,11 @@ ad_proc -public template::data::transform::spellcheck {
     -element_ref:required
     -values:required
 } {
+    Tranform submitted and previously validated input into a spellcheck datastructure.
+
+    @param element_ref Reference variable to the form element.
+    @param values The set of values for that element.
+} {
 
     upvar $element_ref element
 
@@ -108,7 +113,7 @@ ad_proc -public template::data::transform::spellcheck {
                 # form data by richtext validation DAVEB
                 template::element::set_properties $element(form_id) $element(id) -datatype text
 		append formtext_to_display "
-<input type=\"hidden\" name=\"$element(id).format\" value=\"$format\" />"
+<input type=\"hidden\" name=\"$element(id).format\" value=\"$format\" >"
 	    }
 
 	    # This is needed in order to display the form text noquoted in the "show errors" page ...
@@ -290,7 +295,7 @@ ad_proc -public template::util::spellcheck::get_element_formtext {
 	set wordlen [string length $errword]
 	
 	if { [string equal "miss" $errtype] } {
-	    regsub "\#$errnum\#" $formtext "<input type=\"text\" name=\"${var_to_spellcheck}.error_$errnum\" value=\"$errword\" size=\"$wordlen\" />" formtext
+	    regsub "\#$errnum\#" $formtext "<input type=\"text\" name=\"${var_to_spellcheck}.error_$errnum\" value=\"$errword\" size=\"$wordlen\" >" formtext
 	} elseif { [string equal "nearmiss" $errtype] } {
 	    regsub -all ", " $erroptions "," erroptions
 	    set options [split $erroptions ","]
@@ -318,7 +323,7 @@ ad_proc -public template::util::spellcheck::get_element_formtext {
     regsub -all {<a [^<]*>} $formtext_to_display "<u>" formtext_to_display
     regsub -all {</a>} $formtext_to_display "</u>" formtext_to_display
 
-    append formtext_to_display "<input type=\"hidden\" name=\"${var_to_spellcheck}.merge_text\" value=\"[ad_quotehtml $processed_text]\" />"
+    append formtext_to_display "<input type=\"hidden\" name=\"${var_to_spellcheck}.merge_text\" value=\"[ad_quotehtml $processed_text]\" >"
 
 
     ####

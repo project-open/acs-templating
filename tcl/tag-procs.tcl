@@ -11,7 +11,7 @@
 # License.  Full text of the license is available from the GNU Project:
 # http://www.fsf.org/copyleft/gpl.html
 
-ad_proc -public template_tag_if_condition { chunk params condition_type } {
+ad_proc -private template_tag_if_condition { chunk params condition_type } {
 
   set condition "$condition_type \{"
 
@@ -143,7 +143,7 @@ ad_proc -public template_tag_if_interp_expr {} {
     }
 
     in { 
-      set expr [join [lrange $args $i end] "|"]
+      set expr "^([join [lrange $args $i end] "|"])\$"
       append condition "\[regexp \"$expr\" $arg1\] " 
       set next [llength $args]
     }
@@ -161,9 +161,10 @@ ad_proc -public template_tag_if_interp_expr {} {
         append condition "\[empty_string_p $arg1\]"
       } else {
         # substitute array variables
-        regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.]+)@"$} $arg1 {\1(\2)} arg1
-        # substitute regular variables
-        regsub {^"@([a-zA-Z0-9_:]+)@"$} $arg1 {\1} arg1
+        if {! ( [regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.]+)@"$} $arg1 {\1(\2)} arg1]
+                || [regsub {^"@([a-zA-Z0-9_:]+)@"$} $arg1 {\1} arg1] ) } {
+          error "IF tag nil test uses string not variable for $arg1"
+        }
         append condition "\[template::util::is_nil $arg1\]"
       }
       set next $i
@@ -171,8 +172,11 @@ ad_proc -public template_tag_if_interp_expr {} {
 
     defined {
       # substitute variable references
-      regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.]+)@"$} $arg1 {\1(\2)} arg1
-      regsub {^"@([a-zA-Z0-9_:]+)@"$} $arg1 {\1} arg1
+      if { ! ( [regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.]+)@"$} $arg1 {\1(\2)} arg1]
+               || [regsub {^"@([a-zA-Z0-9_:]+)@"$} $arg1 {\1} arg1] )} { 
+        error "IF tag defined test uses string not variable for $arg1"
+      }
+
       append condition "\[info exists $arg1\]"
       set next $i
     }

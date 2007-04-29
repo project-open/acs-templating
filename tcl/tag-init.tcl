@@ -46,6 +46,17 @@ template_tag property { chunk params } {
 template_tag master { params } {
 
   set src [ns_set iget $params src]
+  set slave_properties_p [template::get_attribute multiple $params slave-properties-p 0]
+
+  if {[template::util::is_true $slave_properties_p]} {
+    template::adp_append_code "
+      foreach {__key __value} \$__args {
+        if {!\[string equal \$__key __adp_slave\]} {
+          set __adp_properties(\$__key) \"\$__value\"
+        }
+      }
+    "
+  }
 
   # default to the site-wide master
   if {[empty_string_p $src]} {
@@ -61,11 +72,22 @@ template_tag master { params } {
 
 template_tag slave { params } {
 
+  #Start developer support frame around subordinate template.
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_adp_start_box]] } {
+      ::ds_adp_start_box
+  }
+
   template::adp_append_code "
     if { \[info exists __adp_slave\] } {
       append __adp_output \$__adp_slave
     }
   "
+
+  #End developer support frame around subordinate template.
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_adp_end_box]] } {
+      ::ds_adp_end_box
+  }
+
 }
 
 # Include another template in the current template
@@ -73,6 +95,11 @@ template_tag slave { params } {
 template_tag include { params } {
 
   set src [ns_set iget $params src]
+
+  #Start developer support frame around subordinate template.
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_adp_start_box]] } {
+      ::ds_adp_start_box -stub "\[template::util::url_to_file \"$src\" \"\$__adp_stub\"\]"
+  }
 
   # pass additional arguments as key-value pairs
 
@@ -99,9 +126,24 @@ template_tag include { params } {
   template::adp_append_code "        ad_script_abort"
   template::adp_append_code "    } else {"
   template::adp_append_code "        append __adp_output \"Error in include template \\\"\[template::util::url_to_file \"$src\" \"\$__adp_stub\"\]\\\": \$errmsg\""
+  # JCD: If we have the ds_page_bits cache maybe save the error for later
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_page_fragment_cache_enabled_p]] } {
+      template::adp_append_code "        if {\[::ds_enabled_p\]"
+      template::adp_append_code "            && \[::ds_collection_enabled_p\] } {"
+      template::adp_append_code "            set __include_errors {}"
+      template::adp_append_code "            ns_cache get ds_page_bits \[ad_conn request\]:error __include_errors"
+      template::adp_append_code "            ns_cache set ds_page_bits \[ad_conn request\]:error \[lappend __include_errors \[list \"$src\" \$errorInfo\]\]"
+      template::adp_append_code "        }"
+  }
   template::adp_append_code "        ns_log Error \"Error in include template \\\"\[template::util::url_to_file \"$src\" \"\$__adp_stub\"\]\\\": \$errmsg\n\$errorInfo\""
   template::adp_append_code "    }"
   template::adp_append_code "}"
+
+  #End developer support frame around subordinate template.
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_adp_end_box]] } {
+      ::ds_adp_end_box -stub "\[template::util::url_to_file \"$src\" \"\$__adp_stub\"\]"
+  }
+
 }
 
 # Repeat a template chunk for each row of a multirow data source
@@ -185,9 +227,9 @@ template_tag list { chunk params } {
   
   template::adp_append_code "
 
-  for { set __ats_i 0 } { \$__ats_i < \${$name:rowcount} } { incr __ats_i } {
-    set $name:item \[lindex \${$name} \$__ats_i\]
-    set $name:rownum \[expr \$__ats_i + 1\]
+  for { set __ats_${name}_i 0 } { \$__ats_${name}_i < \${$name:rowcount} } { incr __ats_${name}_i } {
+    set $name:item \[lindex \${$name} \$__ats_${name}_i\]
+    set $name:rownum \[expr \$__ats_${name}_i + 1\]
   "
   template::adp_compile_chunk $chunk
 
@@ -440,6 +482,27 @@ template_tag formgroup { chunk params } {
   }
 }
 
+# render one element from a formgroup
+template_tag formgroup-widget { chunk params } {
+    set id [template::get_attribute formgroup-widget $params id]
+
+    set row [template::get_attribute formgroup-widget $params row]
+    # get any additional HTML attributes specified by the designer
+    set tag_attributes [template::util::set_to_list $params id]
+
+    # generate a list of options and option labels as a data source
+
+
+    template::adp_append_code \
+        "template::element options \${form:id} $id { $tag_attributes }"
+    
+  # make sure name is a parameter to pass to the rendering tag handler
+  ns_set update $params name formgroup
+  ns_set update $params id formgroup
+    template::adp_append_code "append __adp_output \"\$\{formgroup:${row}(widget)\} \$\{formgroup:${row}(label)\}\""
+
+}
+
 # Render a form, incorporating any additional markup attributes
 # specified in the template.  Set the magic variable "form:id"
 # for elements to reference
@@ -490,7 +553,7 @@ template_tag formtemplate { chunk params } {
     "\[template::form check_elements $id\]"
   }
 
-  template::adp_append_string "</form>"
+  template::adp_append_string "</fieldset></form>"
 }
 
 
@@ -570,6 +633,11 @@ template_tag include-optional { chunk params } {
 
   set src [ns_set iget $params src]
 
+  #Start developer support frame around subordinate template.
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_adp_start_box]] } {
+      ::ds_adp_start_box -stub "\[template::util::url_to_file \"$src\" \"\$__adp_stub\"\]"
+  }
+
   # pass additional arguments as key-value pairs
 
   set command "template::adp_parse"
@@ -606,6 +674,12 @@ template_tag include-optional { chunk params } {
     template::util::lpop __adp_include_optional_output
   }
   "
+
+  #End developer support frame around subordinate template.
+  if { [llength [info procs ::ds_enabled_p]] && [llength [info procs ::ds_adp_end_box]] } {
+      ::ds_adp_end_box -stub "\[template::util::url_to_file \"$src\" \"\$__adp_stub\"\]"
+  }
+
 }
 
 # Insert the output from the include-optional tag
@@ -815,3 +889,12 @@ template_tag default { chunk params } {
 
     template::adp_append_code "}"
 }
+
+# contract and comment tags for adding inline
+# documentation to adp files.
+#
+# @author Ben Bytheway (ben@vrusp.com)
+
+template_tag contract { chunk params } {}
+
+template_tag comment { chunk params } {}

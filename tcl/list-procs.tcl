@@ -33,13 +33,15 @@ ad_proc -public template::list::create {
     {-has_checkboxes:boolean}
     {-checkbox_name "checkbox"}
     {-orderby_name "orderby"}
-    {-row_pretty_plural "data"}
+    {-row_pretty_plural "#acs-templating.data#"}
     {-no_data ""}
-    {-main_class "list"}
+    {-main_class "list-table"}
     {-sub_class ""}
     {-class ""}
     {-html ""}
+    {-caption ""}
     {-page_size ""}
+    {-page_size_variable_p 0}
     {-page_groupsize 10}
     {-page_query ""}
     {-page_query_name ""}
@@ -50,6 +52,7 @@ ad_proc -public template::list::create {
     {-groupby ""}
     {-orderby ""}
     {-formats ""}
+    {-filter_form 0}
 } {
     Defines a list to be diplayed in a template. The list works in conjunction with a multirow, which contains the data for the list.
     The list is output using the &lt;listtemplate&gt; and &lt;listfilters&gt; templating tags, with the help of &lt;listelement&gt; and &lt;listrow&gt;.
@@ -175,7 +178,11 @@ ad_proc -public template::list::create {
     @param  html           HTML attributes to be output for the table tag, e.g. { align right style "background-color: yellow;" }. 
                            Value should be a Tcl list with { name value name value }
 
+    @param caption         Caption tag that appears right below the table tag. Required for AA. Added 2/27/2007
+
     @param  page_size      The number of rows to display on each page. If specified, the list will be paginated.
+
+    @param  page_size_variable_p Displays a selectbox to let the user change the number of rows to display on each page. If specified, the list will be paginated.
 
     @param  page_groupsize The page group size for the paginator. See template::paginator::create for more details.
                            
@@ -197,9 +204,13 @@ ad_proc -public template::list::create {
     @param  filters        Filters for the list. Typically used to slice the data, for example to see only rows by a particular user. 
                            Array-list of (filter-name, spec) pairs, like elements. Each spec, in turn, is an array-list of property-name/value pairs, 
                            where the value is 'subst'ed in the caller's environment, except for the *_eval properties, which are 'subst'ed in the multirow context.
-                           In order for filters to work, you have to specify them in your page's ad_page_contract, typically as filter_name:optional. The list builder will find them from there,
+                           In order for filters to work, you have to specify them in your page's ad_page_contract, typically as filter_name:optional.
+                           The list builder will find them from there,
                            by grabbing them from your page's local variables.
                            See <a href="/api-doc/proc-view?proc=template::list::filter::create">template::list::filter::create</a> for details.
+
+                           filters are also the mechanism to export state variables which need to be preserved.  If for example you needed user_id to be 
+                           maintained for the filter and sorting links you would add -filters {user_id {}}
 
     @param  groupby        Things you can group by, e.g. day, week, user, etc. Automatically creates a filter called 'groupby'. 
                            Single array-list of property-name/value pairs, where the value is 'subst'ed in the caller's environment.
@@ -220,6 +231,7 @@ ad_proc -public template::list::create {
                            where the value is 'subst'ed in the caller's environment.
                            See <a href="/api-doc/proc-view?proc=template::list::format::create">template::list::format::create</a> for details.
 
+    @param filter_form     Whether or not we create the form data structure for the listfilters-form tag to dynamically generate a form to specify filter criteria. Default 0 will not generate form. Set to 1 to generate form to use listfilters-form tag.
 
     @see template::list::element::create
     @see template::list::filter::create
@@ -237,6 +249,7 @@ ad_proc -public template::list::create {
         multirow {}
         style {}
         page_size {}
+        page_size_variable_p {}
         page_groupsize {}
         page_query {}
         page_query_name {}
@@ -245,6 +258,7 @@ ad_proc -public template::list::create {
         sub_class {}
         class {}
         html {}
+	caption {}
         actions {}
         bulk_actions {}
         bulk_action_export_vars {}
@@ -272,9 +286,12 @@ ad_proc -public template::list::create {
         ulevel {}
         output {}
         bulk_action_export_chunk {}
+	page_size_export_chunk {}
+	url {}
     }
 
     # Set default for no_data
+    set row_pretty_plural [lang::util::localize $row_pretty_plural]
     set no_data [ad_decode $no_data "" [_ acs-templating.No_row_pretty_plural] $no_data]
     # Set ulevel to the level of the page, so we can access it later
     set list_properties(ulevel) "\#[expr [info level] - $ulevel]"
@@ -295,6 +312,7 @@ ad_proc -public template::list::create {
         sub_class
         class
         html
+	caption
         page_size
         page_groupsize
         page_query
@@ -326,8 +344,8 @@ ad_proc -public template::list::create {
             -list_name $name \
             -element_name $checkbox_name \
             -spec {
-                label {<input type="checkbox" name="_dummy" onclick="acs_ListCheckAll('$name', this.checked)" title="Check/uncheck all rows">}
-                display_template {<input type="checkbox" name="$key" value="@$list_properties(multirow).$key@" id="$name,@$list_properties(multirow).$key@" title="Check/uncheck this row, and select an action to perform below">}
+                label {<input type="checkbox" name="_dummy" onclick="acs_ListCheckAll('$name', this.checked)" onkeypress="acs_ListCheckAll('$name', this.checked)" title="[_ acs-templating.lt_Checkuncheck_all_rows]">}
+                display_template {<input type="checkbox" name="$key" value="@$list_properties(multirow).$key@" id="$name.@$list_properties(multirow).$key@" title="[_ acs-templating.lt_Checkuncheck_this_row]">}
                 sub_class {narrow}
                 html { align center }
             }
@@ -337,13 +355,13 @@ ad_proc -public template::list::create {
     foreach { elm_name elm_spec } $elements {
         # Create the element
         # Need to uplevel 2 the subst command to get to our caller's namespace
+
         template::list::element::create \
             -list_name $name \
             -element_name $elm_name \
             -spec $elm_spec \
-            -ulevel 2
+            -ulevel 2 
     }
-    
     set reserved_filter_names { groupby orderby format page }
 
     # Handle filters
@@ -413,19 +431,31 @@ ad_proc -public template::list::create {
     }
 
     # Pagination
-    if { ![empty_string_p $list_properties(page_size)] && $list_properties(page_size) != 0 } {
+    if { $list_properties(page_size_variable_p) == 1 } {
+	# Create a filter for the variable page size
+        template::list::filter::create \
+            -list_name $name \
+            -filter_name "page_size" \
+            -spec [list label "[_ acs-templating.Page_Size]" default_value 20 hide_p t]
+    }
+
+    if { (![empty_string_p $list_properties(page_size)] && $list_properties(page_size) != 0) || $list_properties(page_size_variable_p) == 1 } {
         # Check that we have either page_query or page_query_name
         if { [empty_string_p $list_properties(page_query)] && [empty_string_p $list_properties(page_query_name)] } {
-            error "When specifying a non-zero page_size, you must also provide either page_query or page_query_name"
+            error "[_ acs-templating.lt_When_specifying_a_non]"
         }
 
         # We create the selected page as a filter, so we get the filter,page thing out
         template::list::filter::create \
             -list_name $name \
             -filter_name "page" \
-            -spec [list label "Page" default_value 1 hide_p t]
+            -spec [list label "[_ acs-templating.Page]" default_value 1 hide_p t]
     }
 
+    # generate filter form
+    if {$filter_form eq 1} {
+	filter_form -name $name
+    }
     # Done, prepare the list. This has to be done while we still have access to the caller's scope
     prepare \
         -name $name \
@@ -488,6 +518,12 @@ ad_proc -public template::list::prepare {
     }
 
     # Create the paginator 
+    if { $list_properties(page_size_variable_p) == 1 } {
+	set list_properties(page_size) $list_properties(filter,page_size)
+	set list_properties(url) [ad_conn url]
+        set list_properties(page_size_export_chunk) [uplevel $list_properties(ulevel) [list export_vars -form -exclude {page_size page} $list_properties(filters_export)]]
+    }
+
     if { ![empty_string_p $list_properties(page_size)] && $list_properties(page_size) != 0 } {
 
         if { [string equal $list_properties(page_query) ""] } {
@@ -531,9 +567,15 @@ ad_proc -public template::list::prepare {
             set flush_p t
         }
 
-        # We need this uplevel so that the bind variables in the query will get bound at the caller's level
+        # We need this uplevel so that the bind variables in the query
+        # will get bound at the caller's level
+        # we pass in a dummy query name because the query text was
+        # already retreived previously with db_map so this call
+        # always passes the full query text and not the query name
+        # this was failing if the template::list call contained a
+        # page_query with an empty page_query_name 
         uplevel $ulevel [list template::paginator create \
-                             --foo--bar-- \
+			     --dummy--query--name-- \
                              $list_properties(paginator_name) \
                              $list_properties(page_query_substed) \
                              -pagesize $list_properties(page_size) \
@@ -552,6 +594,8 @@ ad_proc -public template::list::prepare {
 ad_proc -public template::list::get_refname {
     {-name:required}
 } {
+    Return a canonical name for the given list template.
+} {
     return "$name:properties"
 }
 
@@ -559,6 +603,17 @@ ad_proc -public template::list::get_reference {
     {-name:required}
     {-local_name "list_properties"}
     {-create:boolean}
+} {
+    Bind an upvar reference to a variable at the template parse level to a local
+    variable, optionally giving an error message if it doesn't exist.
+
+    @param name Name of the variable at the template parse level.
+    @param local_name Name of the local variable to bind the reference to, default
+           "list_properties".
+    @param create Boolean which if true suppresses the "not found" error return, for
+           instance when you're building the reference in order to create a new
+           list.
+
 } {
     set refname [get_refname -name $name]
     
@@ -574,7 +629,14 @@ ad_proc -private template::list::get_url {
     {-override ""}
     {-exclude ""}
 } {
-    @param  and     Set this flag if you want the result to start with an 'and' if the list of where clauses returned is non-empty.
+    Build a URL for the current page with query variables set for the various filters
+    active for the named list.  
+
+    @param name The name of the list
+    @param override Values that export_vars should override
+    @param exclude Values that export_vars should not put in the query string
+
+    @return The current page's URL decorated with the computed query string
 } {
     # Get an upvar'd reference to list_properties
     get_reference -name $name
@@ -663,6 +725,8 @@ ad_proc -public template::list::write_output {
 ad_proc -public template::list::csv_quote {
     string
 } {
+    Quote a string for inclusion as a csv element
+} {
     regsub -all {\"} $string {""} result
     return $result
 }
@@ -706,7 +770,7 @@ ad_proc -public template::list::write_csv {
         append __output "\"[join $__cols "\",\""]\"\n"
     }
 
-    ns_return 200 text/plain $__output
+    ns_return 200 text/csv $__output
 }
 
 
@@ -871,7 +935,7 @@ ad_proc -private template::list::template {
     }
 
     # Table tag HTML attributes
-    set list_properties(table_attributes) [template::list::util_html_to_attributes_string $list_properties(html)]
+    set list_properties(table_attributes) [template::list::util_html_to_attributes_string $list_properties(html) 1]
 
     #
     # Find the list template
@@ -907,6 +971,11 @@ ad_proc -private template::list::template {
 
 ad_proc -private template::list::prepare_for_rendering {
     {-name:required}
+} {
+    Build all the variable references that are required when rendering a list
+    template.
+
+    @param name The name of the list template we hope to be able to render eventually.
 } {
     set __level [template::adp_level]
 
@@ -1007,7 +1076,7 @@ ad_proc -private template::list::prepare_for_rendering {
                         # Update subtotals
                         incr __agg_group_counter($__element_properties(name))
                         set __agg_group_sum($__element_properties(name)) \
-                            [expr $__agg_group_sum($__element_properties(name)) + [set $__element_properties(name)]]
+                            [expr $__agg_group_sum($__element_properties(name)) + [expr {[string is double [set $__element_properties(name)]] ? [set $__element_properties(name)] : 0}]]
                     }
 
                     switch $__element_properties(aggregate) {
@@ -1056,6 +1125,15 @@ ad_proc -private template::list::render {
     {-name:required}
     {-style ""}
 } {
+    Simple procedure to render HTML from a list template
+
+    (That's a lame joke, Don)
+
+    @param name The name of the list template.
+    @param style Style template used to render this list template.
+
+    @return HTML suitable for display by your favorite browser.
+} {
     set level [template::adp_level]
     
     # Creates the '_eval' columns and aggregates
@@ -1068,10 +1146,18 @@ ad_proc -private template::list::render {
     # Thus, we need to do the dynamic columns above before this step
     set __adp_output [template -name $name -style $style]
     
-    # compile the template (this is the second compilation, if we're using a dynamic template -- I think)
-    set __list_code [template::adp_compile -string $__adp_output]
+    # set __adp_stub so includes work. Only fully qualified includes will work with this
+    
+    set __list_code {
+	set __adp_stub ""
+    }
+    append __list_code [template::adp_compile -string $__adp_output]
     
     # Paginator
+    if { $list_properties(page_size_variable_p) == 1 } {
+	template::util::list_to_multirow page_sizes {{name 10 value 10} {name 20 value 20} {name 50 value 50} {name 100 value 100}}
+    }
+
     if { ![empty_string_p $list_properties(page_size)] && $list_properties(page_size) != 0 } {
         
         set current_page $list_properties(filter,page)
@@ -1148,6 +1234,8 @@ ad_proc -private template::list::render {
 ad_proc -private template::list::render_row {
     {-name:required}
 } {
+    Render one row of a list template.
+} {
     set level [template::adp_level]
 
     # Get an upvar'd reference to list_properties
@@ -1200,7 +1288,7 @@ ad_proc -private template::list::prepare_elements {
                 set element_properties(orderby_url) [get_url \
                                                          -name $name \
                                                          -override [list [list $list_properties(orderby_name) "${element_name},$direction"]]]
-                set element_properties(orderby_html_title) "Reverse the sort order of this column"
+                set element_properties(orderby_html_title) [_ acs-templating.reverse_sort_order_of_label [list label $element_properties(label)]]
                 set element_properties(ordering_p) "t"
                 set element_properties(orderby_direction) $list_properties(orderby_selected_direction)
 
@@ -1209,7 +1297,7 @@ ad_proc -private template::list::prepare_elements {
                 set element_properties(orderby_url) [get_url \
                                                          -name $name \
                                                          -override [list [list $list_properties(orderby_name) "${element_name},$element_properties(default_direction)"]]]
-                set element_properties(orderby_html_title) "Sort the list by this column"
+                set element_properties(orderby_html_title) [_ acs-templating.sort_the_list_by_label [list label $element_properties(label)]]
             }
         }
     }
@@ -1289,7 +1377,6 @@ ad_proc -private template::list::prepare_filters {
             if { [empty_string_p [string trim $label]] } {
                 set label $filter_properties(null_label)
             }
-
             switch $filter_properties(type) {
                 singleval {
                     set selected_p [exists_and_equal current_filter_value $value]
@@ -1298,12 +1385,22 @@ ad_proc -private template::list::prepare_filters {
                     if { ![exists_and_not_null current_filter_value] } {
                         set selected_p 0
                     } else {
-                        set selected_p [util_sets_equal_p $current_filter_value $value]
+			# Since here we have multiple values
+			# we set as selected_p the value that match any
+			# of the values present in the list
+			set selected_p 0
+			foreach val $current_filter_value {
+			    if { [util_sets_equal_p $val $value] } {
+				set selected_p 1
+				break
+			    }
+			}
                     }
                 }
                 multivar {
                     # Value is a list of { key value } lists
                     # We only check the value whose key matches the filter name
+		    set selected_p 0
                     foreach elm $value {
                         foreach { elm_key elm_value } [lrange $elm 0 1] {}
                         if { [string equal $elm_key $filter_properties(name)] } { 
@@ -1383,7 +1480,8 @@ ad_proc -private template::list::render_filters {
         url_html_title \
         count \
         add_url \
-        selected_p 
+        selected_p \
+        type
     
     foreach filter_ref $list_properties(filter_refs) {
 
@@ -1394,6 +1492,7 @@ ad_proc -private template::list::render_filters {
             # Loop over 'values' and 'url' simultaneously
             foreach elm $filter_properties(values) url $filter_properties(urls) selected_p $filter_properties(selected_p) add_url $filter_properties(add_urls) {
                 
+
                 # 'label' is the first element, 'value' the second
                 # We do an lrange here, otherwise values would be set wrong 
                 # in case someone accidentally supplies a list with too many elements, 
@@ -1404,17 +1503,25 @@ ad_proc -private template::list::render_filters {
                     set label $filter_properties(null_label)
                 }
 
-                template::multirow -local append filters \
-                    $filter_properties(name) \
-                    $filter_properties(label) \
-                    $filter_properties(clear_url) \
-                    [string_truncate -len 25 -- $label] \
-                    $value \
-                    $url \
-                    $label \
-                    $count \
-                    $add_url \
-                    $selected_p
+		if { [string equal $filter_properties(type) "multival"] } {
+		    # We need to ns_urlencode the name to work
+		    set filter_properties_name [ns_urlencode $filter_properties(name)]
+		} else {
+		    set filter_properties_name $filter_properties(name)
+		}
+
+		template::multirow -local append filters \
+		    $filter_properties_name \
+		    $filter_properties(label) \
+		    $filter_properties(clear_url) \
+		    [string_truncate -len 25 -- $label] \
+		    $value \
+		    $url \
+		    $label \
+		    $count \
+		    $add_url \
+		    $selected_p \
+		    $filter_properties(type)
             }
         }
     }
@@ -1442,15 +1549,38 @@ ad_proc -private template::list::render_filters {
 
 ad_proc -public template::list::util_html_to_attributes_string {
     html
+    {default_summary_p "0"}
+} {
+    Takes a list in array get format and builds HTML attributes from them.
+
+    @param html A misnomer?  The input isn't HTML, the output is HTML.
+    @param default_summary_p Include a default summary if one does not exist
+
+    @return HTML attributes built from the list in array get format
+    
+    2/28/2007 - Project Zen - Modifying to handle a default value for summary if default_summary_p = 1
 } {
     set output {}
+    set summary_exists_p 0
     foreach { key value } $html {
-        if { ![empty_string_p $value] } {
-            append output " [ad_quotehtml $key]=\"[ad_quotehtml $value]\""
-        } else {
-            append output " [ad_quotehtml $key]"
-        }
+	if {[string equal $key "summary"]} {
+	    if {![empty_string_p $value]} {
+		set summary_exists_p 1
+		append output " summary=\"[ad_quotehtml $value]\""
+	    } 
+	} else {
+	    if { ![empty_string_p $value] } {
+		append output " [ad_quotehtml $key]=\"[ad_quotehtml $value]\""
+	    } else {
+		append output " [ad_quotehtml $key]"
+	    }
+	}
     }
+
+    if {$default_summary_p && !$summary_exists_p} {
+	append output " summary=\"[_ acs-templating.DefaultSummary [list list_name \@list_properties.name\@]]\""
+    }
+
     return $output
 }
 
@@ -1617,7 +1747,7 @@ ad_proc -public template::list::element::create {
         
     # Let the element know its owner's name
     set element_properties(list_name) $list_name
-
+    
     incr ulevel
     
     set_properties \
@@ -1667,6 +1797,8 @@ ad_proc -public template::list::element::get_refname {
     {-list_name:required}
     {-element_name:required}
 } {
+    @return the name used for the list element properties array.
+} {
     return "$list_name:element:$element_name:properties"
 }
 
@@ -1676,11 +1808,13 @@ ad_proc -public template::list::element::get_reference {
     {-local_name "element_properties"}
     {-create:boolean}
 } {
+    upvar the list element to the callers scope as $local_name
+} {
     # Check that the list exists
     template::list::get_reference -name $list_name
 
     set refname [get_refname -list_name $list_name -element_name $element_name]
-    
+
     if { !$create_p && ![uplevel \#[template::adp_level] [list info exists $refname]] } {
         error "Element '$element_name' not found in list '$list_name'"
     }
@@ -1693,6 +1827,8 @@ ad_proc -public template::list::element::get_property {
     {-list_name:required}
     {-element_name:required}
     {-property:required}
+} {
+    @return the element property in the named list.
 } {
     get_reference \
         -list_name $list_name \
@@ -1707,6 +1843,8 @@ ad_proc -public template::list::element::set_property {
     {-property:required}
     {-value:required}
     {-ulevel 1}
+} {
+    Set a property in the named list template.
 } {
     # Get an upvar'd reference to list_properties
     template::list::get_reference -name $list_name
@@ -1752,6 +1890,8 @@ ad_proc -public template::list::element::set_properties {
     {-element_name:required}
     {-spec:required}
     {-ulevel 1}
+} {
+    Set a list of properties in array get format for the given list template.
 } {
     incr ulevel
 
@@ -1977,6 +2117,13 @@ ad_proc -public template::list::filter::get_refname {
     {-list_name:required}
     {-filter_name:required}
 } {
+    Build a canonical name from a list and filter name.
+
+    @param list_name List name.
+    @param filter_name Filter name.
+
+    @return Canonical name built from list_name and filter_name.
+} {
     return "$list_name:filter:$filter_name:properties"
 }
 
@@ -1985,6 +2132,8 @@ ad_proc -public template::list::filter::get_reference {
     {-filter_name:required}
     {-local_name "filter_properties"}
     {-create:boolean}
+} {
+    Build a reference to the given filter for the given list template.
 } {
     set refname [get_refname -list_name $list_name -filter_name $filter_name]
     
@@ -2001,6 +2150,8 @@ ad_proc -public template::list::filter::set_property {
     {-property:required}
     {-value:required}
     {-ulevel 1}
+} {
+    Set a property for the given list and filter.
 } {
     # Get an upvar'd reference to list_properties
     template::list::get_reference -name $list_name
@@ -2040,6 +2191,9 @@ ad_proc -public template::list::filter::set_properties {
     {-spec:required}
     {-ulevel 1}
 } {
+    Set multiple properties for the given list and filter from a list in
+    array get format.
+} {
     incr ulevel
 
     foreach { property value } $spec {
@@ -2058,6 +2212,8 @@ ad_proc -public template::list::filter::get_property {
     {-filter_name:required}
     {-property:required}
 } {
+    Return a property from a given list and filter.
+} {
     get_reference \
         -list_name $list_name \
         -filter_name $filter_name
@@ -2068,6 +2224,13 @@ ad_proc -public template::list::filter::get_property {
 ad_proc -public template::list::filter::exists_p {
     {-list_name:required}
     {-filter_name:required}
+} {
+    Determine if a given filter exists for a given list template.
+
+    @param list_name The name of the list template.
+    @param filter_name The filter name.
+
+    @return True (1) if the filter exists, false (0) if not.
 } {
     set refname [get_refname -list_name $list_name -filter_name $filter_name]
     
@@ -2416,6 +2579,8 @@ ad_proc -public template::list::orderby::get_refname {
     {-list_name:required}
     {-orderby_name:required}
 } {
+    Build a canonical name from a list and orderby filter.
+} {
     return "$list_name:orderby:$orderby_name:properties"
 }
 
@@ -2424,6 +2589,8 @@ ad_proc -public template::list::orderby::get_reference {
     {-orderby_name:required}
     {-local_name "orderby_properties"}
     {-create:boolean}
+} {
+    Build a local reference to an orderby filter for a named list template.
 } {
     # Check that the list exists
     template::list::get_reference -name $list_name
@@ -2442,6 +2609,8 @@ ad_proc -public template::list::orderby::get_property {
     {-orderby_name:required}
     {-property:required}
 } {
+    Get a property from an orderby filter for a list template.
+} {
     get_reference \
         -list_name $list_name \
         -orderby_name $orderby_name
@@ -2455,6 +2624,8 @@ ad_proc -public template::list::orderby::set_property {
     {-property:required}
     {-value:required}
     {-ulevel 1}
+} {
+    Set a property for an orderby filter in the given list template.
 } {
     # Get an upvar'd reference to list_properties
     template::list::get_reference -name $list_name
@@ -2503,6 +2674,9 @@ ad_proc -public template::list::orderby::set_properties {
     {-orderby_name:required}
     {-spec:required}
     {-ulevel 1}
+} {
+    Set multiple properties for the given orderby filter in the given list
+    template from a list in array get format.
 } {
     incr ulevel
 
@@ -2570,3 +2744,249 @@ template_tag listfilters { chunk params } {
     template::adp_append_string \
         "\[template::list::render_filters -name \"$list_name\" -style \"$style\"\]"
 }
+
+template_tag listfilters-form { chunk params } {
+    set level [template::adp_level]
+    set list_name [template::get_attribute listfilters $params name]
+
+    set style [ns_set iget $params style]
+    
+    template::adp_append_string \
+        "\[template::list::render_form_filters -name \"$list_name\" -style \"$style\"\]"
+}
+
+ad_proc -private template::list::render_form_filters {
+    {-name:required}
+    {-style ""}
+} {
+    
+    if { [string equal $style {}] } { 
+        set style [parameter::get \
+                       -package_id [apm_package_id_from_key "acs-templating"] \
+                       -parameter DefaultListFilterStyle \
+                       -default "filters"]
+    }
+    set file_stub "[template::get_resource_path]/lists/$style"
+
+    # ensure that the style template has been compiled and is up-to-date
+    template::adp_init adp $file_stub
+    
+    # get result of template output procedure into __adp_output
+    # the only data source on which this template depends is the "elements"
+    # multirow data source.  The output of this procedure will be
+    # placed in __adp_output in this stack frame.
+   
+    template::code::adp::$file_stub
+    
+    return $__adp_output
+}
+
+ad_proc -private template::list::filter_form {
+    -name
+} {
+    Documentation goes here
+} {
+    set level [template::adp_level]
+    # Provide a reference to the list properties for use by the list template
+    # Get an upvar'd reference to list_properties
+    get_reference -name $name
+    
+    set filter_names_options_tmp [list]
+    set filter_names_options [list]
+    set filter_hidden_filters [list]
+    set filter_key_filters [list]
+    set filter_hidden_filters_url_vars [list]
+
+    # loop through all the filters in this list
+    foreach filter_ref $list_properties(filter_refs) {
+
+        upvar #$level $filter_ref filter_properties
+	if {$filter_properties(label) ne "" && $filter_properties(name) ne "orderby" && $filter_properties(name) ne "groupby"} {
+	    # filters with a label will be added to the form for the user
+	    # to choose from
+	    lappend filter_names_options_tmp [list $filter_properties(label) $filter_properties(name)]
+	} else {
+
+	    # filters without a label are added as hidden elements
+	    # to the form so that quer params for the list
+	    # and group by/order by are preserved when the filter
+	    # form is used
+
+	    # grab the current value of the filter out of the list if
+	    # it exists
+	    upvar $list_properties(ulevel) $filter_properties(name) current_filter_value
+	    if {[info exists current_filter_value] && $current_filter_value ne ""} {
+		lappend filter_hidden_filters $filter_properties(name)
+		if {$filter_properties(name) ne "groupby" && $filter_properties(name) ne "orderby"} {
+		    lappend filter_key_filters $filter_properties(name) $current_filter_value
+		}
+	    }
+	}
+    }
+
+    upvar #[template::adp_level] __list_filter_form_client_property_key list_filter_form_client_property_key 
+    # we only get 50 characters
+    # to save our clienty property name, we can encode it into an
+    # ns_sha1 hash to make it fit. we don't extract the data from the
+    # property name so this should work fine
+    set list_filter_form_client_property_key [ns_sha1 [list [ad_conn url] $name $filter_key_filters]]
+    upvar \#[template::adp_level] __client_property_filters client_property_filters
+    set client_property_filters [ad_get_client_property acs-templating $list_filter_form_client_property_key]
+
+    # take out filters we already applied...
+    set i 0
+    foreach option_list $filter_names_options_tmp {
+	set option_label [lindex $option_list 0]
+	set option_name [lindex $option_list 1]
+	if {[lsearch $client_property_filters "${name}:filter:${option_name}:properties"]<0} {
+	    lappend filter_names_options [list $option_label $option_name]
+	}
+    }
+    # build an ad_form form based on the choosen filters
+    set filters_form_name list-filters-$name
+    set add_filter_form_name list-filter-add-$name
+    ad_form -name $add_filter_form_name -form {
+	{choose_filter:text(select) {label "Add Filter"} {options {$filter_names_options}} }
+	{name:text(hidden) {value $name}}
+	{add_filter:text(submit) {label "Add"}}
+	{clear_all:text(submit) {label "Clear All"}}
+	{clear_one:text(hidden),optional}
+    }
+    foreach fhf $filter_hidden_filters {
+	ad_form -extend -name $add_filter_form_name -form {
+	    {$fhf:text(hidden),optional}
+	}
+    }
+    ad_form -extend -name $add_filter_form_name -on_request {
+	# setup little Xs to click to clear one field
+	# pass the name of the field in the clear_one variable
+
+	set __form [ns_getform]
+	set clear_one [ns_set get $__form clear_one]
+
+	if {[exists_and_not_null clear_one]} {
+	    # loop through the saved filters and remove 
+	    # the filter from the client property if its 
+	    # specified in clear_one
+	    set __old_client_property_filters [ad_get_client_property acs-templating $__list_filter_form_client_property_key]
+		set __client_property_filters [list]
+
+	    foreach {__ref __value} $__old_client_property_filters {
+		if {[set ${__ref}(name)] ne $clear_one} {
+		    lappend __client_property_filters $__ref $__value
+		}
+	    }
+	    # if we changed the list of filters, save it in the 
+	    # client property, we read it later on to build the
+	    # form of selected filters
+	    set client_property_filters $__client_property_filters
+	    ad_set_client_property acs-templating $__list_filter_form_client_property_key $__client_property_filters
+
+           # now reload the form. excluding var clear_one
+           set pattern [ns_urlencode "clear_one"]=[ns_urlencode "$clear_one"]
+           regsub "${pattern}&?" [ad_return_url] {} url
+           ad_returnredirect $url
+	}
+    } -on_submit {
+
+	if {[exists_and_not_null clear_all]} {
+	    set __client_property_filters {}
+	    ad_set_client_property acs-templating $__list_filter_form_client_property_key $__client_property_filters
+	    break
+	}
+	template::list::get_reference -name $name
+	foreach filter_ref $list_properties(filter_refs) {
+	    upvar \#[template::adp_level] $filter_ref filter_properties
+	    if {$filter_properties(name) eq $choose_filter} {
+		lappend __client_property_filters $filter_ref ""
+	    }
+	}
+ 	ad_set_client_property acs-templating $__list_filter_form_client_property_key $__client_property_filters
+    }
+
+    # create the form the holds the actual filter values
+    ad_form -name $filters_form_name -has_submit 1 -form {
+	{name:text(hidden) {value $name}}
+    }
+    # we need to pass the hidden list filters in this form too
+    # since we need to preserve the other variables if either 
+    # the add filter or the apply filter form is submitted
+    foreach fhf $filter_hidden_filters {
+	ad_form -extend -name $filters_form_name -form {
+	    {$fhf:text(hidden),optional}
+	}
+    }
+
+    # we need to extract the values of the hidden filters out of the
+    # form elements, there is some magic here where ad_form
+    # grabs the elements out of the form/url vars and
+    # sets them, we want to pull them out of the form instead of
+    # setting local variables to prevent collisions
+    foreach fhf $filter_hidden_filters {
+	lappend filter_hidden_filters_url_vars [list $fhf [template::element::get_value $add_filter_form_name $fhf]]
+    }
+
+    # add a select box for filters with a list of valid values
+    # otherwise add a regular text box
+    foreach {f_ref f_value} $client_property_filters {
+	upvar \#[template::adp_level] $f_ref filter_properties
+	if {![template::element::exists $filters_form_name $filter_properties(name)]} {
+	    # extract options 
+	    set options [list]
+
+	    foreach elm $filter_properties(values) url $filter_properties(urls) selected_p $filter_properties(selected_p) add_url $filter_properties(add_urls) {
+		# Loop over 'values' and 'url' simuAltaneously		
+		# 'label' is the first element, 'value' the second
+		# We do an lrange here, otherwise values would be set wrong 
+		# in case someone accidentally supplies a list with too many elements, 
+		# because then the foreach loop would run more than once
+		foreach { label value count } [lrange $elm 0 2] {}
+
+		if { [empty_string_p [string trim $label]] } {
+		    set label $filter_properties(null_label)
+		}
+		lappend  options [list $label $value]
+	    }
+	    set clear_url_vars [concat [list [list clear_one $filter_properties(name)]] $filter_hidden_filters_url_vars]
+	    set clear_url [export_vars -base [ad_conn url] $clear_url_vars]
+	    if {[llength $options]} {
+		ad_form -extend -name $filters_form_name -form {
+		    {$filter_properties(name):text(select),optional {label "$filter_properties(label) \\[<a title=\"remove filter\" href=\"$clear_url\">x</a>\\]"} {options $options}}
+		}
+	    } else {
+		ad_form -extend -name $filters_form_name -form {
+		    {$filter_properties(name):text,optional {label "$filter_properties(label) \\[<a title=\"remove filter\" href=\"$clear_url\">x</a>\\]"} {help_text {[_ acs-templating.Enter_your_search_text]}} }
+		}
+	    }
+	}
+    }
+    
+    ad_form -extend -name $filters_form_name -on_request {
+	foreach {f_ref f_value} $__client_property_filters {
+	    upvar \#[template::adp_level] $f_ref filter_properties
+	    set $filter_properties(name) $f_value
+	}
+    } -on_submit {
+	# set the values of the filters, the creator of the list
+	# still has to process the values to generate a valid
+	# where clause
+	template::list::get_reference -name $name
+	set templist [list]
+	foreach {f_ref f_value} $__client_property_filters {
+	    upvar \#[template::adp_level] $f_ref filter_properties
+	    set filter_properties(value) [set $filter_properties(name)]
+	    lappend templist $f_ref $filter_properties(value)
+	}
+	set __client_property_filters $templist
+	ad_set_client_property acs-templating $__list_filter_form_client_property_key $__client_property_filters
+    }
+    # only show the submit button for the apply filters form if
+    # there are filters selected by the user
+    if {[llength $client_property_filters]} {
+	ad_form -extend -name $filters_form_name -form {
+	    {submit:text(submit) {label "Apply Filters"}}
+	}
+    }
+
+}
+
