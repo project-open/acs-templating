@@ -1,4 +1,6 @@
-<table width="100%"><tr><td width=100% bgcolor="#CCCCFF">
+<table width="100%">
+<tr>
+<td width="100%" bgcolor="#CCCCFF">
   <a name="@info.proc_name@"><font size="+1" weight=bold>@info.proc_name@</font></a>
   <if @info.author@ not nil><br><small><i>&nbsp;&nbsp;by @info.author@</i></small></if>
 </td>
