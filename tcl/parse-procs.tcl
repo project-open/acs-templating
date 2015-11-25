@@ -538,8 +538,10 @@ ad_proc -public template::adp_compile { source_type source } {
   # the parse list now contains the code
   set code [join $parse_list "\n"]
 
-  # Substitute #foo# message keys with values from the message catalog
+  # Fraber 151125: Replace ;literal by ;noquote for downward compatibility
+  regsub -all {;literal} $code {;noquote} code
 
+  # Substitute #foo# message keys with values from the message catalog
   # Since messages may read the variables of the adp page they go trough
   # expand_percentage_signs which amongst other things does an uplevel subst
   while {[regsub -all {([^\\])\#([-a-zA-Z0-9_:\.]+)\#} $code {\1[template::expand_percentage_signs [lang::message::lookup [ad_conn locale] {\2} {TRANSLATION MISSING} {} -1]]} code]} {}
