@@ -1,4 +1,5 @@
-form create pay_bill -section required -elements {
+
+form create pay_bill -section required -sec_legendtext Payment -elements {
   payee -label "Payee" -datatype text -widget text 
   amount -label "Amount" -datatype integer -widget text 
 } 
@@ -25,7 +26,7 @@ if { [form is_valid pay_bill] } {
   set confirm_data [form export]
 
   # add the form:confirm element
-  append confirm_data "<input type=hidden name=\"form:confirm\" value=confirm>"
+  append confirm_data "<input type='hidden' name='form:confirm' value='confirm'>"
 
-  template::set_file "[file dir $__adp_stub]/pay-confirm"
+  template::set_file "[file dirname $__adp_stub]/pay-confirm"
 }

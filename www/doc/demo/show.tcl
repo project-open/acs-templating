@@ -1,11 +1,23 @@
-set file [ns_queryget file]
+ad_page_contract {
+    small demp
 
-if { [regexp {\.\.|^/} $file] } {
+    @author unknown
+    @creation-date unknown
+    @cvs-id $Id$
+} {
+    {file:token ""}
+}
+
+if { $file eq "" } {
+
+  set output "no file specified"
+
+} elseif { [regexp {\.\.|^/} $file] } {
 
   set output "Only files within this directory may be shown."
 
 } else {
- 
+
   # [ns_url2file [ns_conn url]]  fails under request processor !
   # the file for URL pkg/page may be in packages/pkg/www/page, not www/pkg/page
   set dir [file dirname [ad_conn file]]

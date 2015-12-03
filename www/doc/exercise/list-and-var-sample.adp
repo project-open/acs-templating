@@ -2,7 +2,7 @@
 
 <!-- examine master-sample.adp to see that title and closing_text are essentially
 used as onevalues within the master page -->
-<property name="title">@name;noquote@'s Personal Home Page</property>
+<property name="doc(title)">@name;noquote@'s Personal Home Page</property>
 <property name="closing_text"><small>It's been a pleasure to serve you this page</small></property>
 
 
@@ -17,7 +17,7 @@ this web page stands as a monument to the singular and inimitable mind that is <
 
 Now, for some basic contact information:
 <table>
-<tr><td align=left>Name:</td><td><a href="mailto:@email@">@name@</a></td></tr>
+<tr><td align="left">Name:</td><td><a href="mailto:@email@">@name@</a></td></tr>
 <tr><td>Address:</td><td>@address@</td></tr>
 <tr><td>Email:</td><td>@email</td></tr>
 </table>

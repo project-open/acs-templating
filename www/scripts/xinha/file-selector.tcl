@@ -4,9 +4,9 @@ ad_page_contract {
   @creation-date 13.10.2005
   @cvs-id $Id$
 } {	
-  {fs_package_id:integer,notnull,optional}
-  {folder_id:integer,optional}
-  {orderby:optional}
+  {fs_package_id:naturalnum,notnull,optional}
+  {folder_id:naturalnum,optional}
+  {orderby:token,optional}
   {selector_type "image"}
   {file_types "*"}
 } 
@@ -169,7 +169,7 @@ template::list::create \
 	  <input type="hidden" name="@contents.object_id@_file_title" 
              id="@contents.object_id@_file_title" value="@contents.title@" />
 	  </if>
-	  <img src="@contents.icon@"  border=0 
+	  <img src="@contents.icon@"  border="0" 
 	  alt="#file-storage.@contents.type@#" /> 
 	  <a href="@contents.file_url@" <if @contents.folder_p@ eq 0>onclick="selectImage('@contents.object_id@','@contents.file_url@','@contents.type@');return false;"</if>>@contents.name@</a>
 	}
@@ -195,7 +195,7 @@ template::list::create \
       }
     }
 
-set order_by_clause [expr {[exists_and_not_null orderby] ?
+set order_by_clause [expr {([info exists orderby] && $orderby ne "") ?
 			   [template::list::orderby_clause -orderby -name contents] :
 			   " order by fs_objects.sort_key, fs_objects.name asc"}]
 

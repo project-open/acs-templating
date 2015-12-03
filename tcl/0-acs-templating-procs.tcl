@@ -16,11 +16,11 @@ ad_proc -public template_tag { name arglist body } {
 } {
 
   # LARS:
-  # We only ns_register_adptag the tag if it hasn't already been registered
+  # We only ns_adp_registerscript the tag if it hasn't already been registered
   # (if the proc doesn't exist).
   # This makes debugging templating tags so much easier, because you don't have
   # to restart the server each time.
-  set exists_p [llength [info procs template_tag_$name]]
+  set exists_p [llength [info commands template_tag_$name]]
 
   switch [llength $arglist] {
 
@@ -37,7 +37,7 @@ ad_proc -public template_tag { name arglist body } {
       }"
 
       if { !$exists_p } {
-        ns_register_adptag $name template_tag_$name 
+        ns_adp_registerscript $name template_tag_$name 
       }
     }
 
@@ -59,7 +59,7 @@ ad_proc -public template_tag { name arglist body } {
       }"
 
       if { !$exists_p } {
-        ns_register_adptag $name /$name template_tag_$name 
+        ns_adp_registerscript $name /$name template_tag_$name 
       }
     }
 

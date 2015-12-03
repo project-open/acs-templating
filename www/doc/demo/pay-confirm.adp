@@ -12,9 +12,9 @@
 
 <p>Are you sure you want to proceed?</p>
 
-<form action="pay" method=post>
-@confirm_data@
-<input type=submit value="Confirm Payment">
+<form action="pay" method="post">
+@confirm_data;noquote@
+<input type="submit" value="Confirm Payment">
 </form>
 
 <hr>

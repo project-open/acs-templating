@@ -1,8 +1,8 @@
 ad_page_contract {
 	
 } {
-	textarea_id:notnull
-	community_id:integer,notnull
+	textarea_id:naturalnum,notnull
+	community_id:naturalnum,notnull
 } 
 
 # select the correct language file for htmlarea

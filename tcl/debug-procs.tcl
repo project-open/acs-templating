@@ -8,9 +8,9 @@ ad_proc -public watch_files {} {
 
   foreach file $files { 
 
-    set file [ns_info tcllib]/$file
+    set file $::acs::tcllib/$file
 
-    set proc_name [info procs ::template::mtimes::tcl::$file]
+    set proc_name [info commands ::template::mtimes::tcl::$file]
     set mtime [file mtime $file]
 
     if { $proc_name eq {} || $mtime != [$proc_name] } {

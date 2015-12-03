@@ -38,7 +38,7 @@ The namespace @info.name@ currently contains no public methods.
 </blockquote>
 
 <h3>Method Detail</h3>
-<p align=right>
+<p align="right">
 <font color=red>*</font> indicates required
 </p>
 
@@ -47,7 +47,7 @@ The namespace @info.name@ currently contains no public methods.
 </if>
 
 <multiple name=public>
-<include src=proc-template data=@public.data;noquote@>
+<include src=proc-template data="@public.data;literal@">
 <p>
 </multiple>
 
@@ -57,11 +57,11 @@ The namespace @info.name@ currently contains no public methods.
 <b>Private Methods</b>:<br>
 </if>
 <multiple name=private>
-<include src=proc-template data=@private.data;noquote@>
+<include src=proc-template data="@private.data;literal@">
 <p>
 </multiple>
 
-<p align=right>
+<p align="right">
 <font color=red>*</font> indicates required
 </p>
 
