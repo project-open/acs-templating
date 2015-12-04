@@ -338,22 +338,20 @@ ad_proc -private template::form::template { id { style "" } } {
                                    -default "standard-lars"]]
   }
 
-    # Added support for storing form templates outside acs-templating
-    if {[regexp {^/(.*)} $style path]} {
-        set file_stub "$::acs::rootdir$path"
-    } else {
-        set file_stub [template::get_resource_path]/forms/$style  
-    }
-  
-  if { ![file exists "${file_stub}.adp"] } {
+  set file_stub [template::resource_path -type forms -style $style]
+
+  if { ![file exists "$file_stub.adp"] } {
       # We always have a template named 'standard'
-      set file_stub "[template::get_resource_path]/forms/standard"
+      set file_stub [template::resource_path -type forms -style standard]
   }
 
-  # set the asset url for images
-  set assets "[template::get_resource_path]/assets"
-  # assume resources are under page root (not safe)
-  regsub "^$::acs::pageroot" $assets {} assets
+  # the following block seems useless, deactivated for the time being
+  if {0} {
+      # set the asset url for images
+      set assets "[template::get_resource_path]/assets"
+      # assume resources are under page root (not safe)
+      regsub "^$::acs::pageroot" $assets {} assets
+  }
 
   # ensure that the style template has been compiled and is up-to-date
   template::adp_init adp $file_stub
@@ -512,7 +510,7 @@ ad_proc -private template::form::render { id tag_attributes } {
   }
 
   if { [info exists form_properties(actions)] 
-       && [template::util::is_true $form_properties(actions)] 
+       && $form_properties(actions) ne "" 
      } {
     set form_properties(display_buttons) $form_properties(actions)
   }
@@ -863,7 +861,7 @@ ad_proc -public template::form::export {} {
     set value [ns_set value $form $i]
 
     append export_data "
-      <div><input type=\"hidden\" name=\"$key\" value=\"[ad_quotehtml $value]\"></div>"
+      <div><input type=\"hidden\" name=\"$key\" value=\"[ns_quotehtml $value]\"></div>"
   }
 
   return $export_data
@@ -919,3 +917,9 @@ ad_proc -public template::form::set_error {
     set formerror($element) $error
 }
 
+
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 4
+#    indent-tabs-mode: nil
+# End:

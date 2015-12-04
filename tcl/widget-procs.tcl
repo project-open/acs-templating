@@ -322,7 +322,7 @@ ad_proc -private template::widget::textarea_internal {
     if { $mode ne "edit" } {
         set output {}
         if { $value ne "" } {
-            append output "[ad_quotehtml $value]<input type=\"hidden\" name=\"$name\" value=\"[ad_quotehtml $value]\">"
+            append output "[ns_quotehtml $value]<input type=\"hidden\" name=\"$name\" value=\"[ns_quotehtml $value]\">"
         }
     } else {
         set output "<textarea name=\"$name\""
@@ -335,7 +335,7 @@ ad_proc -private template::widget::textarea_internal {
             }
         }
         
-        append output ">[ad_quotehtml $value]</textarea>"
+        append output ">[ns_quotehtml $value]</textarea>"
     }
     
     return $output
@@ -381,7 +381,7 @@ ad_proc -public template::widget::input {
     if { ( $type eq "checkbox" || $type eq "radio" ) && [info exists element(value)] } {
         # This can be used in the form template in a <label for="id">...</label> tag.
         set attributes(id) "$element(form_id):elements:$element(name):$element(value)"
-    } elseif { $type eq "password" || $type eq "text" || $type eq "button" || $type eq "file"} { 
+    } elseif { $type in {"password" "text" "button" "file" }} { 
 	set attributes(id) "$element(name)" 
     }
 
@@ -390,18 +390,19 @@ ad_proc -public template::widget::input {
     if { $element(mode) ne "edit" && $type ni { hidden submit button clear checkbox radio } } {
         set output ""
         if { [info exists element(value)] } {
-            append output [ad_quotehtml $element(value)]
-            append output "<input type=\"hidden\" name=\"$element(name)\" value=\"[ad_quotehtml $element(value)]\">"
+            append output [ns_quotehtml $element(value)]
+            append output "<input type=\"hidden\" name=\"$element(name)\" value=\"[ns_quotehtml $element(value)]\">"
         }
     } else {
         set output "<input type=\"$type\" name=\"$element(name)\""
 
         if { $element(mode) ne "edit" && $type ni { hidden submit button clear } } {
             append output " disabled"
-		}
+        }
+
 
         if { [info exists element(value)] } {
-            append output " value=\"[ad_quotehtml $element(value)]\""
+            append output " value=\"[ns_quotehtml $element(value)]\""
         } 
 
         foreach name [array names attributes] {
@@ -505,12 +506,12 @@ ad_proc -public template::widget::hidden {
     # I changed this by saying that field is multiple whenever element(values) 
     # exists and is not null.
     if { [info exists element(values)] && $element(values) ne "" } {
-      ns_log notice "hidden form element with multiple values: <$element(values)>"
+      #ns_log notice "hidden form element with multiple values: <$element(values)>"
       set output {}
       set count 0
       foreach itemvalue $element(values) {
 	append output [subst {
-	  <input type="hidden" id="$element(form_id):$element(name):$count" name="$element(name)" value="[ad_quotehtml $itemvalue]">
+	  <input type="hidden" id="$element(form_id):$element(name):$count" name="$element(name)" value="[ns_quotehtml $itemvalue]">
 	}]
         incr count
       }
@@ -661,7 +662,7 @@ ad_proc -public template::widget::menu {
 
             if { [info exists values($value)] } {
                 lappend selected_list $label
-                append output "<input type=\"hidden\" name=\"$widget_name\" value=\"[ad_quotehtml $value]\">"
+                append output [subst {<input type="hidden" name="$widget_name" value="[ns_quotehtml $value]">}]
             }
         }
 
@@ -678,22 +679,22 @@ ad_proc -public template::widget::menu {
                     set label [lindex $option 0]
                     set value [lindex $option 1]
 
-                    append output " <input type=\"$widget_type\" name=\"$widget_name\" value=\"[ad_quotehtml $value]\""
+                    append output [subst { <input type="$widget_type" name="$widget_name" value="[ns_quotehtml $value]"}]
                     if { [info exists values($value)] } {
-                        append output " checked=\"checked\""
+                        append output [subst { checked="checked"}]
                     }
 
-                    append output ">$label<br>\n"
+                    append output [subst {>[ns_quotehtml $label]<br>\n}]
                 }
             }
             default {
-                append output "<select name=\"$widget_name\" id=\"$widget_name\" "
+                append output [subst {<select name="$widget_name" id="$widget_name" }]
 
                 foreach name [array names attributes] {
                     if {$attributes($name) eq {}} {
-                        append output " $name=\"$name\""
+                        append output [subst { $name="$name"}]
                     } else {
-                        append output " $name=\"$attributes($name)\""
+                        append output [subst { $name="$attributes($name)"}]
                     }
                 }
                 append output ">\n"
@@ -703,12 +704,12 @@ ad_proc -public template::widget::menu {
                     set label [lindex $option 0]
                     set value [lindex $option 1]
 
-                    append output " <option value=\"[ad_quotehtml $value]\""
+                    append output [subst { <option value="[ns_quotehtml $value]"}]
                     if { [info exists values($value)] } {
-                        append output " selected=\"selected\""
+                        append output [subst { selected="selected"}]
                     }
 
-                    append output ">$label</option>\n"
+                    append output [subst {>[ns_quotehtml $label]</option>\n}]
                 }
                 append output "</select>"
             }
@@ -1074,8 +1075,8 @@ ad_proc -public template::widget::select_text {
 	    append output [template::util::select_text::get_property select_value $element(value)]
 	    append output "&nbsp;"
 	    append output [template::util::select_text::get_property text_value $element(value)]          
-	    append output "<input type=\"hidden\" name=\"$element(id).text\" value=\"[ad_quotehtml $text]\">"
-	    append output "<input type=\"hidden\" name=\"$element(id)\" value=\"[ad_quotehtml $select]\">"
+	    append output "<input type=\"hidden\" name=\"$element(id).text\" value=\"[ns_quotehtml $text]\">"
+	    append output "<input type=\"hidden\" name=\"$element(id)\" value=\"[ns_quotehtml $select]\">"
 	}
     }
     
@@ -1328,3 +1329,11 @@ ad_proc -public template::widget::checkbox_text {
     
     return $output
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 4
+#    indent-tabs-mode: nil
+# End:
+

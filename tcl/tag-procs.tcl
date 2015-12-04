@@ -96,7 +96,7 @@ ad_proc -private template_tag_subst_reference {arg} {
     substitute variable references
     @return variable name 
 } {
-    if { [regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.]+)@"$} $arg {\1(\2)} arg1] } {
+    if { [regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.-]+)@"$} $arg {\1(\2)} arg1] } {
     } elseif { [regsub {^"@([a-zA-Z0-9_:]+)@"$} $arg {\1} arg1] } { 
     } else {
         set arg1 ""
@@ -168,8 +168,7 @@ ad_proc -public template_tag_if_interp_expr {} {
         }
 
         in { 
-            set expr "^([join [lrange $args $i end] "|"])\$"
-            append condition "\[regexp \"$expr\" $arg1\] " 
+            append condition "$arg1 in { [lrange $args 2 end] } "
             set next [llength $args]
         }
 
@@ -189,20 +188,17 @@ ad_proc -public template_tag_if_interp_expr {} {
                 if {$arg eq ""} {
                     error "IF tag nil test uses string not variable for $arg1"
                 }
-                #append condition "\[template::util::is_nil $arg\]"
                 append condition "(!\[info exists $arg\] || \${$arg} eq {})"
             }
             set next $i
         }
 
         defined {
-            # substitute variable references
-            if { ! ( [regsub {^"@([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.]+)@"$} $arg1 {\1(\2)} arg1]
-                     || [regsub {^"@([a-zA-Z0-9_:]+)@"$} $arg1 {\1} arg1] )} { 
-                error "IF tag defined test uses string not variable for $arg1"
+            set arg [template_tag_subst_reference $arg1]
+            if {$arg eq ""} {
+                error "IF tag nil test uses string not variable for $arg1"
             }
-
-            append condition "\[info exists $arg1\]"
+            append condition "\[info exists $arg\]"
             set next $i
         }
 
@@ -217,7 +213,8 @@ ad_proc -public template_tag_if_interp_expr {} {
         }
         
         true {
-            append condition "\[template::util::is_true $arg1\]"
+            #append condition "\[template::util::is_true $arg1\]"
+            append condition "\[string is true -strict $arg1\]"
             set next $i
         }
         
@@ -228,7 +225,8 @@ ad_proc -public template_tag_if_interp_expr {} {
 
         default { 
             # treat <if @foo_p@> as a shortcut for <if @foo_p@ true>
-            append condition "\[template::util::is_true $arg1\]"
+            #append condition "\[template::util::is_true $arg1\]"
+            append condition "\[string is true -strict $arg1\]"
             set next [expr {$i - 1}]
         }
     }

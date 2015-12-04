@@ -478,25 +478,26 @@ ad_proc -public template::expand_percentage_signs { message } {
     return $formatted_message
 }
 
-ad_proc -public template::adp_compile { source_type source } {
+ad_proc -public template::adp_compile { {-file ""} {-string ""} } {
     Converts an ADP template into a chunk of Tcl code.  Caching this code
     avoids the need to reparse the ADP template with each request.
 
-    @param source_type Indicates the source of the Tcl code to compile.
-    Valid options are -string or -file
-    @param source      A string containing either the template itself 
-                      (for -string) or the path to the file containing the template (for -file)
-
+    @param file The file name of the source
+    @param string string to be compliled
     @return The compiled code.
+
+    Valid options are either -string or -file
 } {
     variable parse_list
     # initialize the compiled code
     set parse_list [list "set __adp_output {}; set __ad_conn_locale \[ad_conn locale\]"]
 
-    switch -exact -- $source_type {
-        -file { set chunk [template::util::read_file $source] }
-        -string { set chunk $source }
-        default { error "Source type must be -string or -file" } 
+    if {$file ne "" && $string ne ""} {
+        error "you must specify either -file or -string"
+    } elseif {$file ne ""} {
+        set chunk [template::util::read_file $file]
+    } else {
+        set chunk $string
     }
 
     # substitute <% ... %> blocks with registered tags so they can be handled 
@@ -531,7 +532,7 @@ ad_proc -public template::adp_compile { source_type source } {
 
     # We do each substitution set in two pieces, separately for normal
     # variables and for variables with ";noquote" attached to them.
-    # Specifically, @x@ gets translated to [ad_quotehtml ${x}], whereas
+    # Specifically, @x@ gets translated to [ns_quotehtml ${x}], whereas
     # @x;noquote@ gets translated to ${x}.  The same goes for array
     # variable references.
 
@@ -550,7 +551,7 @@ ad_proc -public template::adp_compile { source_type source } {
     if {[ns_quotehtml ""] eq ""} {
         while {[regsub -all [template::adp_array_variable_regexp] $code {\1[ns_quotehtml [lang::util::localize $\2(\3)]]} code]} {}
     } else {
-        while {[regsub -all [template::adp_array_variable_regexp] $code {\1[ad_quotehtml [lang::util::localize $\2(\3)]]} code]} {}
+        while {[regsub -all [template::adp_array_variable_regexp] $code {\1[ns_quotehtml [lang::util::localize $\2(\3)]]} code]} {}
     }
 
     # substitute simple variable references
@@ -560,7 +561,7 @@ ad_proc -public template::adp_compile { source_type source } {
     if {[ns_quotehtml ""] eq ""} {
         while {[regsub -all [template::adp_variable_regexp] $code {\1[ns_quotehtml [lang::util::localize ${\2}]]} code]} {}
     } else {
-        while {[regsub -all [template::adp_variable_regexp] $code {\1[ad_quotehtml [lang::util::localize ${\2}]]} code]} {}
+        while {[regsub -all [template::adp_variable_regexp] $code {\1[ns_quotehtml [lang::util::localize ${\2}]]} code]} {}
     }
 
     # unescape protected # references

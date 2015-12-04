@@ -872,8 +872,7 @@ ad_proc -public template::multirow {
           }
           1 {
             # TCL_ERROR
-            global errorInfo errorCode
-            error $error $errorInfo $errorCode
+            error $error $::errorInfo $::errorCode
           }
           2 {
             # TCL_RETURN
@@ -1163,6 +1162,8 @@ ad_proc -public cache { command cache_key args } {
   return $result
 }
 
-# Local Variables:
-# tcl-indent-level: 2
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 4
+#    indent-tabs-mode: nil
 # End:
