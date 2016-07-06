@@ -103,7 +103,7 @@ ad_proc adp_parse_ad_conn_file {} {
         # acs-lang translator mode
         #
 
-        if { [lang::util::translator_mode_p] } {
+        if { "1" eq [lang::util::translator_mode_p] } {
             set apm_package_url [apm_package_url_from_key "acs-lang"]
             
             # Attempt to move all message keys outside of tags
