@@ -55,7 +55,7 @@
   <msg key="lt_day_between_for_month_pretty">Für den Monat %month_pretty% muss der Tag zwischen 1 und %maxdays% liegen</msg>
   <msg key="lt_No_value_supplied_for_-field_pretty-">Kein Wert für %field_pretty% angegeben</msg>
   <msg key="lt_The_-field_pretty-_must_be_non_negative">Das Feld %field_pretty% muss eine positive Zahl beinhalten</msg>
-  <msg key="lt_When_specifying_a_non">When Sie eine 'page_size' ungleich 0 spezifizieren müssen sie auch entweder 'page_query' oder 'page_query_name' spezifizieren</msg>
+  <msg key="lt_When_specifying_a_non">When Sie eine &#39;page_size&#39; ungleich 0 spezifizieren müssen sie auch entweder &#39;page_query&#39; oder &#39;page_query_name&#39; spezifizieren</msg>
   <msg key="Meridian">Längengrad</msg>
   <msg key="Minutes">Minuten</msg>
   <msg key="minutes">Minuten</msg>
