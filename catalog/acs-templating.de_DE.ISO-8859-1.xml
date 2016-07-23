@@ -7,6 +7,7 @@
   <msg key="data">Daten</msg>
   <msg key="Day">Tag</msg>
   <msg key="day">Tag</msg>
+  <msg key="DefaultSummary">Daten für %list_name%</msg>
   <msg key="Element_is_required">%label% muss ausgefüllt werden</msg>
   <msg key="Element_is_too_long_Plural">%label% ist um %excess_no_bytes% Zeichen zu lang.</msg>
   <msg key="Element_is_too_long_Singular">%label% ist um 1 Zeichen zu lang.</msg>
