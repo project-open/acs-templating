@@ -17,9 +17,9 @@
   <msg key="day">день</msg>
   <msg key="DefaultSummary">Данные для %list_name%</msg>
   <msg key="descending_order">порядок по убыванию</msg>
-  <msg key="Element_is_required">требуется '%label%'</msg>
-  <msg key="Element_is_too_long_Plural">'%label%' %excess_no_bytes% слишком длинное.</msg>
-  <msg key="Element_is_too_long_Singular">'%label%' на один символ длиннее.</msg>
+  <msg key="Element_is_required">требуется &#39;%label%&#39;</msg>
+  <msg key="Element_is_too_long_Plural">&#39;%label%&#39; %excess_no_bytes% слишком длинное.</msg>
+  <msg key="Element_is_too_long_Singular">&#39;%label%&#39; на один символ длиннее.</msg>
   <msg key="Enhanced_Text">Расширенное форматирование текста</msg>
   <msg key="Enter_your_search_text">Введите текст для поиска</msg>
   <msg key="Fixed_width_Text">Текст фиксированной длины</msg>
