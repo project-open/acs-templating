@@ -15,5 +15,6 @@
   <msg key="Plain_Text">Czysty Tekst</msg>
   <msg key="required">wymagane</msg>
   <msg key="reverse_sort_order_of_label">Odwróć kolejność sortowania %label%</msg>
-  <msg key="sort_the_list_by_label">Sortuj Listę Po %label%</msg>
+  <msg key="Sort_order">Porządek sortowania</msg>
+  <msg key="sort_the_list_by_label">Sortuj listę po %label%</msg>
 </message_catalog>
