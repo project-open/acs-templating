@@ -5,7 +5,7 @@
   <msg key="24-Hour">24-stündig</msg>
   <msg key="Add_the_selected_file">Ausgewählte Datei hinzufügen</msg>
   <msg key="Add_the_selected_image">Ausgewähltes Bild hinzufügen</msg>
-  <msg key="ascending_order">Ascending Order</msg>
+  <msg key="ascending_order">Aufsteigende Sortierung</msg>
   <msg key="CSV">CSV</msg>
   <msg key="data">Daten</msg>
   <msg key="Day">Tag</msg>
@@ -15,6 +15,8 @@
   <msg key="Element_is_required">%label% muss ausgefüllt werden</msg>
   <msg key="Element_is_too_long_Plural">%label% ist um %excess_no_bytes% Zeichen zu lang.</msg>
   <msg key="Element_is_too_long_Singular">%label% ist um 1 Zeichen zu lang.</msg>
+  <msg key="Format">Format
+</msg>
   <msg key="Formats">Formate</msg>
   <msg key="hours">Stunden</msg>
   <msg key="Hours_must_be_between_0_and_23">Stunden müssen zwischen 0 und 23 liegen</msg>
