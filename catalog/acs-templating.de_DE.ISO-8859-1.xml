@@ -15,11 +15,15 @@
   <msg key="Element_is_required">%label% muss ausgefüllt werden</msg>
   <msg key="Element_is_too_long_Plural">%label% ist um %excess_no_bytes% Zeichen zu lang.</msg>
   <msg key="Element_is_too_long_Singular">%label% ist um 1 Zeichen zu lang.</msg>
+  <msg key="Enhanced_Text">Formatierter Text
+</msg>
+  <msg key="Fixed_width_Text">Text mit fester Breite</msg>
   <msg key="Format">Format
 </msg>
   <msg key="Formats">Formate</msg>
   <msg key="hours">Stunden</msg>
   <msg key="Hours_must_be_between_0_and_23">Stunden müssen zwischen 0 und 23 liegen</msg>
+  <msg key="HTML">HTML</msg>
   <msg key="HTMLArea_action_cancel">Abbrechen</msg>
   <msg key="HTMLArea_ImageAlignment">Ausrichtung</msg>
   <msg key="HTMLArea_ImageAlignmentLeft">Linksbündig</msg>
@@ -75,6 +79,7 @@
   <msg key="not_ordered">Nicht sortierbar</msg>
   <msg key="Page">Seite</msg>
   <msg key="Page_Size">Größe der Liste</msg>
+  <msg key="Plain_Text">Einfacher Text</msg>
   <msg key="Previous_with_arrow">&lt;&lt; Zurück</msg>
   <msg key="required">Angabe erforderlich</msg>
   <msg key="reverse_sort_order_of_label">Sortierreihenfolge umkehren von %label%</msg>
