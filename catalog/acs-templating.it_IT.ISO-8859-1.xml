@@ -21,7 +21,7 @@
   <msg key="Minutes">Minuti</msg>
   <msg key="Month">Mese</msg>
   <msg key="Next_with_arrow">Successivo &gt;&gt;</msg>
-  <msg key="No_row_pretty_plural">righe</msg>
+  <msg key="No_row_pretty_plural">Nessuno</msg>
   <msg key="Previous_with_arrow">&lt;&lt; Precedente</msg>
   <msg key="required">obbligatorio</msg>
   <msg key="Seconds">Secondi</msg>
